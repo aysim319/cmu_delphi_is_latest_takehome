@@ -8,7 +8,10 @@ def get_latest_from_df_full(df_full: pd.DataFrame) -> pd.DataFrame:
     df_full_latest_partial = df_full.groupby(by=["signal_key_id", "geo_key_id", "time_type", "time_value"],
                                              group_keys=False, as_index=False).agg({'issue': "max"})
     df_full_latest = df_full.merge(df_full_latest_partial,
-                                   on=["signal_key_id", "geo_key_id", "time_type", "time_value", "issue"], how="inner")
+                                   on=["signal_key_id", "geo_key_id", "time_type", "time_value", "issue"], how="inner", indicator=False)
+
+    df_full_latest = df_full_latest.reset_index(drop=True)
+    df_full_latest = df_full_latest.drop('_merge', axis=1)
     return df_full_latest
 
 def get_out_of_date_entries(df_full: pd.DataFrame, df_latest: pd.DataFrame) -> pd.DataFrame:
@@ -16,7 +19,7 @@ def get_out_of_date_entries(df_full: pd.DataFrame, df_latest: pd.DataFrame) -> p
     # Return a dataframe of the links that are out of date
     # ps. might want to think about how you could use this at the end of the program for testing
     df_full_latest = get_latest_from_df_full(df_full)
-    df_latest_ood = df_latest.merge(df_full_latest, how="outer", indicator=True).query('_merge=="left_only"')
+    df_latest_ood = df_latest.merge(df_full_latest, how="outer", indicator=True)
     df_latest_ood = df_latest_ood.drop('_merge', axis=1)
     return df_latest_ood
 
@@ -43,8 +46,8 @@ def update_epimetric_latest(df_latest: pd.DataFrame, df_updates: pd.DataFrame) -
 
 
 if __name__ == '__main__':
-    df_latest = pd.read_csv(f'{PROJECT_ROOT}/data/epimetric_latest.csv')
-    df_full = pd.read_csv(f'{PROJECT_ROOT}/data/epimetric_full.csv')
+    df_latest = pd.read_csv(f'{PROJECT_ROOT}/data/epimetric_latest.csv', index_col=False)
+    df_full = pd.read_csv(f'{PROJECT_ROOT}/data/epimetric_full.csv', index_col=False)
 
     # *** CALL YOUR FUNCTIONS HERE ***
     # output your resulting dataframe to a CSV
